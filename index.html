@@ -4,47 +4,59 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Mapa de Calor de Acciones</title>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
- <style>
-  body {
-    font-family: Arial, sans-serif;
-    background-color: #ffffff; /* Fondo blanco */
-    color: #111; /* Texto oscuro */
-    text-align: center;
-  }
-  h1 {
-    margin-top: 20px;
-    color: #222;
-  }
-  p {
-    color: #555;
-  }
-  .grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-    gap: 10px;
-    padding: 20px;
-    max-width: 1000px;
-    margin: auto;
-  }
-  .cell {
-    padding: 20px;
-    border-radius: 8px;
-    font-weight: bold;
-    color: white;
-    transition: all 0.3s ease;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
-  }
-</style>
-
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #ffffff; /* Fondo claro */
+      color: #111;
+      text-align: center;
+    }
+    h1 {
+      margin-top: 20px;
+      color: #222;
+    }
+    p {
+      color: #555;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      gap: 10px;
+      padding: 20px;
+      max-width: 1000px;
+      margin: auto;
+    }
+    .cell {
+      padding: 20px;
+      border-radius: 8px;
+      font-weight: bold;
+      color: white;
+      transition: all 0.3s ease;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+    }
+  </style>
 </head>
 <body>
   <h1>📊 Mapa de Calor de Acciones</h1>
-  <p>Se actualiza automáticamente con los datos del mercado.</p>
+  <p>Estilo TradingView — Colores visibles incluso en variaciones pequeñas</p>
   <div class="grid" id="heatmap"></div>
 
-<script>
+  <script>
 const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/10NZ7aE0KKGS8mC6n6kt5lNe0bDc8KX7iXaqrTzmRU9g/gviz/tq?tqx=out:csv";
+
+function getColor(variacion) {
+  // Límite máximo de color (±5%)
+  const max = 5;
+  const val = Math.max(-max, Math.min(max, variacion));
+
+  // Escala de color tipo TradingView:
+  // - rojo fuerte (-5%) → gris (0%) → verde fuerte (+5%)
+  const ratio = (val + max) / (2 * max); // Normaliza entre 0 y 1
+  const r = Math.round(255 * (1 - ratio));   // rojo decrece
+  const g = Math.round(255 * ratio);         // verde crece
+  const b = 100; // un poco de azul para darle tono “vivo”
+  return `rgb(${r}, ${g}, ${b})`;
+}
 
 async function cargarDatos() {
   const response = await fetch(SHEET_CSV_URL);
@@ -52,11 +64,11 @@ async function cargarDatos() {
 
   // Limpieza de comillas y espacios
   text = text.replace(/"/g, "").trim();
-  
+
   // Divide por línea
   const rows = text.split("\n").map(r => r.split(","));
-  
-  // Extrae solo las columnas útiles (2ª = ticker, 3ª = variación)
+
+  // Extrae solo columnas útiles
   const empresas = rows
     .map(r => [r[1]?.trim(), r[2]?.trim()])
     .filter(r => r[0] && r[1] && r[0] !== "Ticker");
@@ -70,13 +82,7 @@ async function cargarDatos() {
 
     const div = document.createElement("div");
     div.classList.add("cell");
-
-    const color =
-      num > 0
-        ? `rgba(0, 200, 0, ${Math.min(num / 5, 1)})`
-        : `rgba(200, 0, 0, ${Math.min(Math.abs(num) / 5, 1)})`;
-
-    div.style.backgroundColor = color;
+    div.style.backgroundColor = getColor(num);
     div.textContent = `${nombre}: ${num.toFixed(2)}%`;
     contenedor.appendChild(div);
   });
@@ -84,8 +90,6 @@ async function cargarDatos() {
 
 cargarDatos();
 setInterval(cargarDatos, 60000);
-</script>
+  </script>
 </body>
 </html>
-
-

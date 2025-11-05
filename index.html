@@ -7,68 +7,80 @@
   <style>
     body {
       font-family: Arial, sans-serif;
-      background-color: #ffffff; /* Fondo claro */
-      color: #111;
+      background-color: #0e1117; /* Fondo oscuro */
+      color: #fff;
       text-align: center;
+      margin: 0;
+      padding: 0;
     }
+
     h1 {
       margin-top: 20px;
-      color: #222;
+      color: #fff;
+      font-weight: 600;
     }
+
     p {
-      color: #555;
+      color: #aaa;
     }
+
     .grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
       gap: 10px;
       padding: 20px;
-      max-width: 1000px;
+      max-width: 1100px;
       margin: auto;
     }
+
     .cell {
       padding: 20px;
-      border-radius: 8px;
+      border-radius: 10px;
       font-weight: bold;
-      color: white;
-      transition: all 0.3s ease;
-      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+      color: #fff;
+      text-shadow: 0 1px 3px rgba(0,0,0,0.6);
+      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .cell:hover {
+      transform: scale(1.08);
+      box-shadow: 0 4px 12px rgba(255,255,255,0.2);
+      z-index: 10;
     }
   </style>
 </head>
 <body>
   <h1>📊 Mapa de Calor de Acciones</h1>
-  <p>Estilo TradingView — Colores visibles incluso en variaciones pequeñas</p>
+  <p>Inspirado en el diseño de TradingView</p>
   <div class="grid" id="heatmap"></div>
 
   <script>
 const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/10NZ7aE0KKGS8mC6n6kt5lNe0bDc8KX7iXaqrTzmRU9g/gviz/tq?tqx=out:csv";
 
+// Función de color tipo TradingView
 function getColor(variacion) {
-  // Límite máximo de color (±5%)
-  const max = 5;
+  const max = 5; // límite superior para saturar color
   const val = Math.max(-max, Math.min(max, variacion));
+  const ratio = (val + max) / (2 * max);
 
-  // Escala de color tipo TradingView:
-  // - rojo fuerte (-5%) → gris (0%) → verde fuerte (+5%)
-  const ratio = (val + max) / (2 * max); // Normaliza entre 0 y 1
-  const r = Math.round(255 * (1 - ratio));   // rojo decrece
-  const g = Math.round(255 * ratio);         // verde crece
-  const b = 100; // un poco de azul para darle tono “vivo”
+  // Verde brillante (#16c784) para subas fuertes, rojo (#ea3943) para bajas
+  const red = [234, 57, 67];
+  const green = [22, 199, 132];
+
+  const r = Math.round(red[0] + (green[0] - red[0]) * ratio);
+  const g = Math.round(red[1] + (green[1] - red[1]) * ratio);
+  const b = Math.round(red[2] + (green[2] - red[2]) * ratio);
+
   return `rgb(${r}, ${g}, ${b})`;
 }
 
 async function cargarDatos() {
   const response = await fetch(SHEET_CSV_URL);
   let text = await response.text();
-
-  // Limpieza de comillas y espacios
   text = text.replace(/"/g, "").trim();
 
-  // Divide por línea
   const rows = text.split("\n").map(r => r.split(","));
-
-  // Extrae solo columnas útiles
   const empresas = rows
     .map(r => [r[1]?.trim(), r[2]?.trim()])
     .filter(r => r[0] && r[1] && r[0] !== "Ticker");

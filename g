@@ -30,7 +30,7 @@
 
   <script>
     // ----- PEGÁ ACÁ la URL CSV que obtuviste al "Publicar en la web" desde Google Sheets:
-    const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/YOUR_SHEET_ID/pub?output=csv";
+    const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/10NZ7aE0KKGS8mC6n6kt5lNe0bDc8KX7iXaqrTzmRU9g/gviz/tq?tqx=out:csv";
     // --------------------------------------------------------------
 
     const tickersOrder = ["NVDA","AAPL","MSFT","META","AVGO","GOOGL","BRK-B","JPM",

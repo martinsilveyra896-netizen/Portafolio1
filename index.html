@@ -36,37 +36,51 @@
   <p>Se actualiza automáticamente con los datos del mercado.</p>
   <div class="grid" id="heatmap"></div>
 
-  <script>
+ <script>
 const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/10NZ7aE0KKGS8mC6n6kt5lNe0bDc8KX7iXaqrTzmRU9g/gviz/tq?tqx=out:csv";
 
+async function cargarDatos() {
+  const response = await fetch(SHEET_CSV_URL);
+  let text = await response.text();
 
+  // Limpia comillas dobles y espacios
+  text = text.replace(/"/g, "").trim();
 
-    async function cargarDatos() {
-      const response = await fetch(SHEET_CSV_URL);
-      const text = await response.text();
-      const rows = text.trim().split("\n").map(r => r.split(","));
-      const empresas = rows.slice(1);
+  // Detecta si usa punto y coma (;) o coma (,)
+  const separador = text.includes(";") ? ";" : ",";
+  const rows = text.split("\n").map(r => r.split(separador));
 
-      const contenedor = document.getElementById("heatmap");
-      contenedor.innerHTML = "";
+  // Lee encabezados
+  const headers = rows[0].map(h => h.trim());
+  const tickerIndex = headers.indexOf("Ticker");
+  const varIndex = headers.indexOf("Variacion");
+  const empresas = rows.slice(1);
 
-      empresas.forEach(([nombre, variacion]) => {
-        const div = document.createElement("div");
-        div.classList.add("cell");
-        const num = parseFloat(variacion);
-        const color =
-          num > 0
-            ? `rgba(0, 200, 0, ${Math.min(num / 5, 1)})`
-            : `rgba(200, 0, 0, ${Math.min(Math.abs(num) / 5, 1)})`;
-        div.style.backgroundColor = color;
-        div.textContent = `${nombre}: ${variacion}%`;
-        contenedor.appendChild(div);
-      });
-    }
+  const contenedor = document.getElementById("heatmap");
+  contenedor.innerHTML = "";
 
-    cargarDatos();
-    setInterval(cargarDatos, 60000);
-  </script>
+  empresas.forEach(row => {
+    const nombre = row[tickerIndex]?.trim();
+    const variacion = parseFloat(row[varIndex]?.replace(",", "."));
+    if (!nombre || isNaN(variacion)) return;
+
+    const div = document.createElement("div");
+    div.classList.add("cell");
+
+    const color =
+      variacion > 0
+        ? `rgba(0, 200, 0, ${Math.min(variacion / 5, 1)})`
+        : `rgba(200, 0, 0, ${Math.min(Math.abs(variacion) / 5, 1)})`;
+
+    div.style.backgroundColor = color;
+    div.textContent = `${nombre}: ${variacion.toFixed(2)}%`;
+    contenedor.appendChild(div);
+  });
+}
+
+cargarDatos();
+setInterval(cargarDatos, 60000);
+</script>
 </body>
 </html>
 

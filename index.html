@@ -38,39 +38,52 @@
       border-radius: 10px;
       font-weight: bold;
       color: #fff;
-      text-shadow: 0 1px 3px rgba(0,0,0,0.6);
-      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+      text-shadow: 0 1px 3px rgba(0,0,0,0.7);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
       transition: transform 0.2s ease, box-shadow 0.2s ease;
     }
 
     .cell:hover {
       transform: scale(1.08);
-      box-shadow: 0 4px 12px rgba(255,255,255,0.2);
+      box-shadow: 0 4px 12px rgba(255,255,255,0.25);
       z-index: 10;
     }
   </style>
 </head>
 <body>
   <h1>📊 Mapa de Calor de Acciones</h1>
-  <p>Inspirado en el diseño de TradingView</p>
+  <p>Estilo TradingView con colores intensos</p>
   <div class="grid" id="heatmap"></div>
 
   <script>
 const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/10NZ7aE0KKGS8mC6n6kt5lNe0bDc8KX7iXaqrTzmRU9g/gviz/tq?tqx=out:csv";
 
-// Función de color tipo TradingView
+// Escala más potente — colores vivos
 function getColor(variacion) {
-  const max = 5; // límite superior para saturar color
+  const max = 5; // ±5% rango para saturación total
   const val = Math.max(-max, Math.min(max, variacion));
   const ratio = (val + max) / (2 * max);
 
-  // Verde brillante (#16c784) para subas fuertes, rojo (#ea3943) para bajas
-  const red = [234, 57, 67];
-  const green = [22, 199, 132];
+  // Colores base más fuertes
+  const red = [255, 60, 60];     // rojo vivo
+  const gray = [80, 80, 80];     // gris neutro
+  const green = [0, 230, 118];   // verde brillante
 
-  const r = Math.round(red[0] + (green[0] - red[0]) * ratio);
-  const g = Math.round(red[1] + (green[1] - red[1]) * ratio);
-  const b = Math.round(red[2] + (green[2] - red[2]) * ratio);
+  // Interpolación no lineal: más contraste
+  let r, g, b;
+  if (val < 0) {
+    // Mezcla entre rojo ↔ gris
+    const t = (val + max) / max;
+    r = Math.round(gray[0] + (red[0] - gray[0]) * (1 - t));
+    g = Math.round(gray[1] + (red[1] - gray[1]) * (1 - t));
+    b = Math.round(gray[2] + (red[2] - gray[2]) * (1 - t));
+  } else {
+    // Mezcla entre gris ↔ verde
+    const t = val / max;
+    r = Math.round(gray[0] + (green[0] - gray[0]) * t);
+    g = Math.round(gray[1] + (green[1] - gray[1]) * t);
+    b = Math.round(gray[2] + (green[2] - gray[2]) * t);
+  }
 
   return `rgb(${r}, ${g}, ${b})`;
 }

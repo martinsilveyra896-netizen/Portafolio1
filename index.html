@@ -7,7 +7,7 @@
   <style>
     body {
       font-family: Arial, sans-serif;
-      background-color: #0e1117; /* Fondo oscuro */
+      background-color: #0e1117;
       color: #fff;
       text-align: center;
       margin: 0;
@@ -20,9 +20,14 @@
       font-weight: 600;
     }
 
-    p {
-      color: #aaa;
+    #rendimiento {
+      font-size: 1.4em;
+      font-weight: bold;
+      margin-top: 10px;
     }
+
+    .positivo { color: #16c784; }
+    .negativo { color: #ea3943; }
 
     .grid {
       display: grid;
@@ -52,39 +57,33 @@
 </head>
 <body>
   <h1>📊 Mapa de Calor de Acciones</h1>
-  <p>Estilo TradingView con colores intensos</p>
+  <p>Con rendimiento ponderado del portafolio</p>
+  <div id="rendimiento">Cargando...</div>
   <div class="grid" id="heatmap"></div>
 
   <script>
 const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/10NZ7aE0KKGS8mC6n6kt5lNe0bDc8KX7iXaqrTzmRU9g/gviz/tq?tqx=out:csv";
 
-// Escala más potente — colores vivos
 function getColor(variacion) {
-  const max = 5; // ±5% rango para saturación total
+  const max = 5;
   const val = Math.max(-max, Math.min(max, variacion));
   const ratio = (val + max) / (2 * max);
+  const red = [255, 60, 60];
+  const gray = [80, 80, 80];
+  const green = [0, 230, 118];
 
-  // Colores base más fuertes
-  const red = [255, 60, 60];     // rojo vivo
-  const gray = [80, 80, 80];     // gris neutro
-  const green = [0, 230, 118];   // verde brillante
-
-  // Interpolación no lineal: más contraste
   let r, g, b;
   if (val < 0) {
-    // Mezcla entre rojo ↔ gris
     const t = (val + max) / max;
     r = Math.round(gray[0] + (red[0] - gray[0]) * (1 - t));
     g = Math.round(gray[1] + (red[1] - gray[1]) * (1 - t));
     b = Math.round(gray[2] + (red[2] - gray[2]) * (1 - t));
   } else {
-    // Mezcla entre gris ↔ verde
     const t = val / max;
     r = Math.round(gray[0] + (green[0] - gray[0]) * t);
     g = Math.round(gray[1] + (green[1] - gray[1]) * t);
     b = Math.round(gray[2] + (green[2] - gray[2]) * t);
   }
-
   return `rgb(${r}, ${g}, ${b})`;
 }
 
@@ -95,22 +94,36 @@ async function cargarDatos() {
 
   const rows = text.split("\n").map(r => r.split(","));
   const empresas = rows
-    .map(r => [r[1]?.trim(), r[2]?.trim()])
+    .map(r => [r[1]?.trim(), r[2]?.trim(), r[3]?.trim()])
     .filter(r => r[0] && r[1] && r[0] !== "Ticker");
 
   const contenedor = document.getElementById("heatmap");
   contenedor.innerHTML = "";
 
-  empresas.forEach(([nombre, variacion]) => {
-    const num = parseFloat(variacion.replace(",", "."));
-    if (isNaN(num)) return;
+  let rendimientoPonderado = 0;
+  let sumaPesos = 0;
+
+  empresas.forEach(([nombre, variacion, peso]) => {
+    const numVar = parseFloat(variacion.replace(",", "."));
+    const numPeso = parseFloat(peso.replace(",", "."));
+    if (isNaN(numVar) || isNaN(numPeso)) return;
+
+    rendimientoPonderado += numVar * numPeso;
+    sumaPesos += numPeso;
 
     const div = document.createElement("div");
     div.classList.add("cell");
-    div.style.backgroundColor = getColor(num);
-    div.textContent = `${nombre}: ${num.toFixed(2)}%`;
+    div.style.backgroundColor = getColor(numVar);
+    div.textContent = `${nombre}: ${numVar.toFixed(2)}%`;
     contenedor.appendChild(div);
   });
+
+  // Normaliza si los pesos no suman 1 exactamente
+  if (sumaPesos > 0) rendimientoPonderado /= sumaPesos;
+
+  const rendElem = document.getElementById("rendimiento");
+  const signo = rendimientoPonderado >= 0 ? "+" : "";
+  rendElem.innerHTML = `💰 Rendimiento del portafolio: <span class="${rendimientoPonderado >= 0 ? 'positivo' : 'negativo'}">${signo}${rendimientoPonderado.toFixed(2)}%</span>`;
 }
 
 cargarDatos();

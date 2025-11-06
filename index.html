@@ -57,7 +57,7 @@
 </head>
 <body>
   <h1>📊 Mapa de Calor de Acciones</h1>
-  <p>Con rendimiento ponderado del portafolio</p>
+  <p>Con rendimiento ponderado del portafolio (normalizado)</p>
   <div id="rendimiento">Cargando...</div>
   <div class="grid" id="heatmap"></div>
 
@@ -100,16 +100,24 @@ async function cargarDatos() {
   const contenedor = document.getElementById("heatmap");
   contenedor.innerHTML = "";
 
+  let totalPeso = 0;
+  let datosValidos = [];
+
+  // Primero calculamos la suma total de pesos válidos
+  empresas.forEach(([nombre, variacion, peso]) => {
+    const numPeso = parseFloat(peso.replace(",", "."));
+    if (!isNaN(numPeso)) totalPeso += numPeso;
+  });
+
   let rendimientoPonderado = 0;
-  let sumaPesos = 0;
 
   empresas.forEach(([nombre, variacion, peso]) => {
     const numVar = parseFloat(variacion.replace(",", "."));
     const numPeso = parseFloat(peso.replace(",", "."));
-    if (isNaN(numVar) || isNaN(numPeso)) return;
+    if (isNaN(numVar) || isNaN(numPeso) || totalPeso === 0) return;
 
-    rendimientoPonderado += numVar * numPeso;
-    sumaPesos += numPeso;
+    const pesoNormalizado = numPeso / totalPeso;
+    rendimientoPonderado += numVar * pesoNormalizado;
 
     const div = document.createElement("div");
     div.classList.add("cell");
@@ -117,9 +125,6 @@ async function cargarDatos() {
     div.textContent = `${nombre}: ${numVar.toFixed(2)}%`;
     contenedor.appendChild(div);
   });
-
-  // Normaliza si los pesos no suman 1 exactamente
-  if (sumaPesos > 0) rendimientoPonderado /= sumaPesos;
 
   const rendElem = document.getElementById("rendimiento");
   const signo = rendimientoPonderado >= 0 ? "+" : "";
